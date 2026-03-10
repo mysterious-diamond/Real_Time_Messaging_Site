@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "INSERT INTO messages(room_id, user_id, content) VALUES(?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "744fa234efa17362bb79a5024cfd778be028974e250b532ecbf5c306cec8548b"
+}
