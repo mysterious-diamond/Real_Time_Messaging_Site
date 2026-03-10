@@ -1,0 +1,2 @@
+fn(State<Pool<MySql>>, axum::Json<CreateRoomRequest>, Claims) -> impl Future<Output = Result<impl IntoResponse, APIError>> {create_room}
+fn(State<Pool<MySql>>, axum::Json<CreateRoomRequest>, Claims) -> impl Future<Output = Result<impl IntoResponse, APIError>> {create_room}: Handler<_, _>
