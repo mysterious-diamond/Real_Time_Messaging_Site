@@ -1,0 +1,3 @@
+[33m515ff03[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add sqlx query cache for offline compilation
+[33m7d59c7a[m Fix Dockerfile paths
+[33m9a3c68c[m Fixed dockerfile
