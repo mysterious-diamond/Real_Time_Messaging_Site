@@ -67,33 +67,40 @@ pub async fn create_room(
 ) -> Result<impl IntoResponse, APIError> {
     let CreateRoomRequest { name, is_private } = data;
 
+    println!("Creating room: {} is_private: {}", name, is_private);
+
     sqlx::query!(
         "INSERT INTO rooms(name, created_by, is_private) VALUES (?, ?, ?)",
         name,
         claims.sub,
         is_private,
     )
-        .execute(&state.pool)
-        .await
-        .map_err(|_| APIError::InternalServerError)?;
+    .execute(&state.pool)
+    .await
+    .map_err(|e| { println!("Insert room error: {}", e); APIError::InternalServerError })?;
+
+    println!("Room inserted, getting ID");
 
     let room = sqlx::query!(
         "SELECT id FROM rooms WHERE name = ?",
         name,
     )
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|_| APIError::InternalServerError)?;
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| { println!("Get room error: {}", e); APIError::InternalServerError })?;
 
-    // Add creator as a member
+    println!("Got room ID: {}", room.id);
+
     sqlx::query!(
         "INSERT INTO room_members(room_id, user_id) VALUES (?, ?)",
         room.id,
         claims.sub,
     )
-        .execute(&state.pool)
-        .await
-        .map_err(|_| APIError::InternalServerError)?;
+    .execute(&state.pool)
+    .await
+    .map_err(|e| { println!("Insert member error: {}", e); APIError::InternalServerError })?;
+
+    println!("Room created successfully");
 
     Ok((StatusCode::CREATED, "Room created").into_response())
 }
