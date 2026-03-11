@@ -124,15 +124,17 @@ async fn handle_socket(
     loop {
         tokio::select! {
             Some(Ok(Message::Text(message))) = receiver.next() => {
-                if let Err(_) = publish_message(&state.pool, &mut redis_conn, message, room_id, id).await {
-                    return;
+                if publish_message(&state.pool, &mut redis_conn, message, room_id, id).await.is_err() {
+                    break;
                 }
             },
 
             Some(redis_msg) = messages.next() => {
                 let text: String = redis_msg.get_payload().unwrap();
-                sender.send(Message::Text(text)).await.unwrap();
-            }
+                if sender.send(Message::Text(text)).await.is_err() {
+                    break;
+                }
+            }  
         }
     }
 }
