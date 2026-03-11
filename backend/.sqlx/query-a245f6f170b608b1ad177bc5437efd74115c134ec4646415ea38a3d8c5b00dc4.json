@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE messages SET deleted = True WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a245f6f170b608b1ad177bc5437efd74115c134ec4646415ea38a3d8c5b00dc4"
+}

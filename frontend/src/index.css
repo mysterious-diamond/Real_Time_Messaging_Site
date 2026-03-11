@@ -127,3 +127,27 @@ button:hover {
     gap: 0.5rem;
     padding-top: 1rem;
 }
+
+.message {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+textarea {
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #0f3460;
+    background: #0f3460;
+    color: #eee;
+    font-size: 1rem;
+    width: 100%;
+    resize: none;
+    height: 60px;
+}
+
+.invite-form {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+}

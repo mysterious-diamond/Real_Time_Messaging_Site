@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT id, name, created_by, created_at FROM rooms",
+  "query": "SELECT id, name, created_by, is_private, created_at FROM rooms \n        WHERE is_private = 0 \n        OR (is_private = 1 AND id IN (\n            SELECT room_id FROM room_members WHERE user_id = ?\n        ))",
   "describe": {
     "columns": [
       {
@@ -35,6 +35,16 @@
       },
       {
         "ordinal": 3,
+        "name": "is_private",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "char_set": 63,
+          "max_size": 1
+        }
+      },
+      {
+        "ordinal": 4,
         "name": "created_at",
         "type_info": {
           "type": "Timestamp",
@@ -45,14 +55,15 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
+      false,
       false,
       false,
       false,
       false
     ]
   },
-  "hash": "f002a172e42f00fb611b76d0f9114ba814b883d2121a17ad551301664857180d"
+  "hash": "1636eff55e28ff14fca6339db3cecdd63c465327ec61c57591f121dd123fc2c4"
 }

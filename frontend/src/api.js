@@ -22,10 +22,19 @@ export const login = (username, password) =>
 export const getRooms = () =>
     api.get('/rooms')
 
-export const createRoom = (name) =>
-    api.post('/rooms', { name })
-
 export const getMessages = (roomId) =>
     api.get(`/rooms/${roomId}/messages`)
+
+export const deleteMessage = (messageId) =>
+    api.delete(`/messages/${messageId}`)
+
+export const createRoom = (name, isPrivate) =>
+    api.post('/rooms', { name, is_private: isPrivate })
+
+export const inviteUser = (roomId, username) =>
+    api.post(`/rooms/${roomId}/invite`, { username })
+
+export const getRoom = (roomId) =>
+    api.get(`/rooms/${roomId}`)
 
 export default api

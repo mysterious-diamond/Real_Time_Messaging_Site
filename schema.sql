@@ -12,8 +12,19 @@ CREATE TABLE rooms (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL UNIQUE,
     created_by INT NOT NULL,
+    is_private BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE room_members (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    room_id INT NOT NULL,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (room_id) REFERENCES rooms(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE KEY unique_membership (room_id, user_id)
 );
 
 CREATE TABLE messages (
@@ -21,6 +32,7 @@ CREATE TABLE messages (
     room_id INT NOT NULL,
     user_id INT NOT NULL,
     content TEXT NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (room_id) REFERENCES rooms(id),
     FOREIGN KEY (user_id) REFERENCES users(id)

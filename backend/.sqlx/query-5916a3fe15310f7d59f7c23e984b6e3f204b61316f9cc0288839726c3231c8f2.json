@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT user_id FROM messages WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 11
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5916a3fe15310f7d59f7c23e984b6e3f204b61316f9cc0288839726c3231c8f2"
+}

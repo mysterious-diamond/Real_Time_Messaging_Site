@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "INSERT INTO rooms(name, created_by, is_private) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "288a30cd85defbe8dd9965aa272ed54efb536b5623c98f562064de1159173ad7"
+}

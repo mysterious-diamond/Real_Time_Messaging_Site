@@ -6,6 +6,7 @@ function Lobby() {
   const [rooms, setRooms] = useState([]);
   const [error, setError] = useState("");
   const [newRoom, setNewRoom] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
   const navigate = useNavigate();
 
   const fetchRooms = async () => {
@@ -19,8 +20,9 @@ function Lobby() {
 
   const handleCreateRoom = async () => {
     try {
-      await createRoom(newRoom);
+      await createRoom(newRoom, isPrivate);
       setNewRoom("");
+      setIsPrivate(false);
       fetchRooms();
     } catch (err) {
       setError("Internal server error");
@@ -42,7 +44,7 @@ function Lobby() {
             className="room-item"
             onClick={() => navigate(`/rooms/${room.id}`)}
           >
-            {room.name}
+            {room.name} {room.is_private === 1 ? "🔒" : "🌐"}
           </div>
         ))}
       </div>
@@ -53,6 +55,14 @@ function Lobby() {
           value={newRoom}
           onChange={(e) => setNewRoom(e.target.value)}
         />
+        <label>
+          <input
+            type="checkbox"
+            checked={isPrivate}
+            onChange={(e) => setIsPrivate(e.target.checked)}
+          />
+          Private
+        </label>
         <button onClick={handleCreateRoom}>Create</button>
       </div>
     </div>

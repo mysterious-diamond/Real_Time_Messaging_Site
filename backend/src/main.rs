@@ -1,6 +1,6 @@
 use dotenv::dotenv;
 use tokio::net::TcpListener;
-use axum::{ Router, routing::{ post, get } };
+use axum::{ Router, routing::{ post, get, delete } };
 use sqlx::MySqlPool;
 use tower_http::cors::{CorsLayer, Any};
 use axum::http::Method;
@@ -22,7 +22,7 @@ async fn main() {
     dotenv().ok();
     let cors = CorsLayer::new()
         .allow_origin(Any)
-        .allow_methods([Method::GET, Method::POST])
+        .allow_methods([Method::GET, Method::POST, Method::DELETE])
         .allow_headers(Any);
 
     let pool: MySqlPool = db::create_mysql_pool().await;
@@ -37,6 +37,9 @@ async fn main() {
         .route("/rooms", post(handlers::rooms::create_room))
         .route("/rooms/:id/messages", get(handlers::messages::get_messages))
         .route("/ws/:room_id", get(handlers::ws::ws_handler))
+        .route("/messages/:id", delete(handlers::messages::delete_message))
+        .route("/rooms/:id/invite", post(handlers::rooms::invite_user))
+        .route("/rooms/:id", get(handlers::rooms::get_room))
         .layer(cors)
         .with_state(state);
     let listener: TcpListener = TcpListener::bind("0.0.0.0:3000").await.unwrap();

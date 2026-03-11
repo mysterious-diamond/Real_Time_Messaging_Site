@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT is_private FROM rooms WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "is_private",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "char_set": 63,
+          "max_size": 1
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e27bac139cac392b1889ffbd5119a15d0e2a122b097dd5487d47b12b622dcfcf"
+}

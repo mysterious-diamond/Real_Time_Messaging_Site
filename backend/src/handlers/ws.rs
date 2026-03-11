@@ -3,7 +3,6 @@ use futures::{sink::SinkExt, stream::StreamExt};
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use redis::aio::MultiplexedConnection;
 use sqlx::MySqlPool;
-use serde_json::json;
 use crate::{AppState, errors::APIError, middleware::auth::Claims};
 
 #[derive(serde::Deserialize)]
@@ -26,12 +25,37 @@ pub async fn ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
     Path(room_id): Path<i32>,
-    Query(token): Query<WsQuery>
+    Query(query): Query<WsQuery>,
 ) -> Result<impl IntoResponse, APIError> {
-    let claims = match validate_token(&token.token)? {
-        Some(val) => val,
+    let claims = match validate_token(&query.token)? {
+        Some(claims) => claims,
         None => return Ok((StatusCode::UNAUTHORIZED, "Unauthorized").into_response()),
     };
+
+    // Check if user has access to this room
+    let room = sqlx::query!(
+        "SELECT is_private FROM rooms WHERE id = ?",
+        room_id,
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|_| APIError::InternalServerError)?
+    .ok_or(APIError::NotFound)?;
+
+    if room.is_private != 0 {
+        let member = sqlx::query!(
+            "SELECT id FROM room_members WHERE room_id = ? AND user_id = ?",
+            room_id,
+            claims.sub,
+        )
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|_| APIError::InternalServerError)?;
+
+        if member.is_none() {
+            return Err(APIError::Unauthorized);
+        }
+    }
 
     Ok(ws.on_upgrade(move |socket| handle_socket(socket, state, room_id, claims.sub)))
 }
@@ -54,8 +78,10 @@ async fn publish_message(
 
     let msg: String = serde_json::json!({
         "username": user.username,
+        "user_id": user_id,
         "content": message,
         "room_id": room_id,
+        "deleted": 0,
     }).to_string();
 
     redis::cmd("PUBLISH")
