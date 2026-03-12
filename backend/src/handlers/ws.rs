@@ -114,16 +114,6 @@ async fn publish_message(
     .await
     .map_err(|_| APIError::InternalServerError)?;
 
-    sqlx::query!(
-        "INSERT INTO messages(room_id, user_id, content) VALUES(?, ?, ?)",
-        room_id,
-        user_id,
-        message,
-    )
-    .execute(pool)
-    .await
-    .map_err(|_| APIError::InternalServerError)?;
-
     Ok(())
 }
 
