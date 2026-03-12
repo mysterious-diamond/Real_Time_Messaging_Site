@@ -124,7 +124,10 @@ function ChatRoom() {
           prev.map((m) => (m.id === msg.message_id ? { ...m, deleted: 1 } : m)),
         );
       } else {
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
         if (atBottom) scrollToBottom(true);
       }
     };
