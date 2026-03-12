@@ -109,7 +109,7 @@ function ChatRoom() {
         messagesContainerRef.current.scrollTop =
           messagesContainerRef.current.scrollHeight;
       }
-    }, 150);
+    }, 1500);
   };
 
   useEffect(() => {
