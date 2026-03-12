@@ -23,7 +23,7 @@ function ChatRoom() {
     try {
       const response = await getMessages(id);
       setMessages(response.data);
-      if (scroll) setTimeout(() => scrollToBottom(), 100);
+      if (scroll) scrollToBottom();
     } catch (err) {
       setError("Internal server error");
     }
@@ -35,7 +35,7 @@ function ChatRoom() {
       JSON.stringify({ type: "message", content: cur_message }),
     );
     setCurrentMessage("");
-    setTimeout(() => scrollToBottom(), 50);
+    scrollToBottom();
   };
 
   const handleDelete = async (messageId) => {
@@ -101,7 +101,15 @@ function ChatRoom() {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop =
+          messagesContainerRef.current.scrollHeight;
+      }
+    }, 150);
   };
 
   useEffect(() => {
@@ -119,7 +127,7 @@ function ChatRoom() {
         );
       } else {
         setMessages((prev) => [...prev, msg]);
-        if (atBottom) setTimeout(() => scrollToBottom(), 50);
+        if (atBottom) scrollToBottom();
       }
     };
 
