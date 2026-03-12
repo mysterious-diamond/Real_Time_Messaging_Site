@@ -11,6 +11,7 @@ function ChatRoom() {
   const [error, setError] = useState("");
   const [cur_message, setCurrentMessage] = useState("");
   const [inviteUsername, setInviteUsername] = useState("");
+  const [initialLoad, setInitialLoad] = useState(true);
   const [room, setRoom] = useState(null);
 
   const { id } = useParams();
@@ -23,7 +24,6 @@ function ChatRoom() {
     try {
       const response = await getMessages(id);
       setMessages(response.data);
-      if (scroll) scrollToBottom();
     } catch (err) {
       setError("Internal server error");
     }
@@ -35,7 +35,7 @@ function ChatRoom() {
       JSON.stringify({ type: "message", content: cur_message }),
     );
     setCurrentMessage("");
-    scrollToBottom();
+    scrollToBottom(true);
   };
 
   const handleDelete = async (messageId) => {
@@ -100,16 +100,14 @@ function ChatRoom() {
     );
   };
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (smooth = true) => {
     setTimeout(() => {
       if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        messagesEndRef.current.scrollIntoView({
+          behavior: smooth ? "smooth" : "instant",
+        });
       }
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop =
-          messagesContainerRef.current.scrollHeight;
-      }
-    }, 1500);
+    }, 100);
   };
 
   useEffect(() => {
@@ -127,7 +125,7 @@ function ChatRoom() {
         );
       } else {
         setMessages((prev) => [...prev, msg]);
-        if (atBottom) scrollToBottom();
+        if (atBottom) scrollToBottom(true);
       }
     };
 
@@ -140,6 +138,12 @@ function ChatRoom() {
   }, []);
 
   // this one runs whenever messages is changed
+  useEffect(() => {
+    if (messages.length > 0 && initialLoad) {
+      scrollToBottom(false); // instant on page load
+      setInitialLoad(false);
+    }
+  }, [messages]);
 
   return (
     <div className="chat-container">
