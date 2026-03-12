@@ -107,7 +107,7 @@ function ChatRoom() {
           behavior: smooth ? "smooth" : "instant",
         });
       }
-    }, 100);
+    }, 200);
   };
 
   useEffect(() => {
