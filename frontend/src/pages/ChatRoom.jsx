@@ -134,6 +134,7 @@ function ChatRoom() {
 
     return () => {
       webSocket.current.close();
+      setMessages([]);
     };
   }, []);
 
