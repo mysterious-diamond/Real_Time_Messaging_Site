@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { getMessages, deleteMessage, getRoom, inviteUser } from "../api";
-import { useParams } from "react-router-dom";
+import { getMessages, getRoom, inviteUser } from "../api";
+import { useParams, useNavigate } from "react-router-dom";
 
 function ChatRoom() {
   const token = localStorage.getItem("token");
@@ -15,29 +15,35 @@ function ChatRoom() {
 
   const { id } = useParams();
   const webSocket = useRef(null);
+  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const navigate = useNavigate();
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (scroll = false) => {
     try {
       const response = await getMessages(id);
       setMessages(response.data);
+      if (scroll) setTimeout(() => scrollToBottom(), 100);
     } catch (err) {
       setError("Internal server error");
     }
   };
 
   const handleSend = () => {
-    webSocket.current.send(cur_message);
+    if (cur_message.trim() === "") return;
+    webSocket.current.send(
+      JSON.stringify({ type: "message", content: cur_message }),
+    );
     setCurrentMessage("");
+    setTimeout(() => scrollToBottom(), 50);
   };
 
   const handleDelete = async (messageId) => {
-    console.log("Deleting message", messageId);
     try {
-      const response = await deleteMessage(messageId);
-      console.log("Delete response", response);
-      fetchMessages();
+      webSocket.current.send(
+        JSON.stringify({ type: "delete", message_id: messageId }),
+      );
     } catch (err) {
-      console.log("Delete error", err);
       setError("Failed to delete message");
     }
   };
@@ -61,15 +67,60 @@ function ChatRoom() {
     }
   };
 
+  const formatTime = (timestamp) => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const formatDay = (timestamp) => {
+    if (!timestamp) return null;
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return date.toLocaleDateString();
+  };
+
+  const shouldShowDay = (messages, index) => {
+    if (index === 0) return true;
+    const prev = new Date(messages[index - 1].created_at);
+    const curr = new Date(messages[index].created_at);
+    return prev.toDateString() !== curr.toDateString();
+  };
+
+  const isAtBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    return (
+      container.scrollHeight - container.scrollTop - container.clientHeight < 50
+    );
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
     webSocket.current = new WebSocket(
       `${import.meta.env.VITE_WS_URL}/ws/${id}?token=${token}`,
     );
 
     webSocket.current.onmessage = (event) => {
-      console.log(event.data);
+      const atBottom = isAtBottom();
       const msg = JSON.parse(event.data);
-      setMessages((prev) => [...prev, msg]);
+
+      if (msg.type === "delete") {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msg.message_id ? { ...m, deleted: 1 } : m)),
+        );
+      } else {
+        setMessages((prev) => [...prev, msg]);
+        if (atBottom) setTimeout(() => scrollToBottom(), 50);
+      }
     };
 
     fetchMessages();
@@ -80,8 +131,14 @@ function ChatRoom() {
     };
   }, []);
 
+  // this one runs whenever messages is changed
+
   return (
     <div className="chat-container">
+      <div className="chat-header">
+        <button onClick={() => navigate("/lobby")}>← Back</button>
+        <h2>{room ? room.name : "Loading..."}</h2>
+      </div>
       {error && <p className="error">{error}</p>}
 
       {room && room.created_by === currentUserId && room.is_private === 1 && (
@@ -96,22 +153,44 @@ function ChatRoom() {
         </div>
       )}
 
-      <div className="messages">
+      <div className="messages" ref={messagesContainerRef}>
         {messages.map((msg, index) => (
-          <div key={index} className="message">
-            <strong>{msg.username}</strong>:{" "}
-            {msg.deleted ? "message deleted" : msg.content}
-            {msg.user_id === currentUserId && !msg.deleted && (
-              <button onClick={() => handleDelete(msg.id)}>Delete</button>
+          <div key={index}>
+            {shouldShowDay(messages, index) && msg.created_at && (
+              <div className="day-separator">{formatDay(msg.created_at)}</div>
             )}
+            <div className="message">
+              <strong>{msg.username}</strong>:{" "}
+              {msg.deleted ? "message deleted" : msg.content}
+              {msg.created_at && (
+                <span className="message-time">
+                  {formatTime(msg.created_at)}
+                </span>
+              )}
+              {Number(msg.user_id) === Number(currentUserId) &&
+                !msg.deleted && (
+                  <button onClick={() => handleDelete(msg.id)}>Delete</button>
+                )}
+            </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="chat-input">
         <textarea
           value={cur_message}
           onChange={(e) => setCurrentMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (
+              e.key === "Enter" &&
+              !e.shiftKey &&
+              !("ontouchstart" in window)
+            ) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
           placeholder="Type a message..."
         />
         <button onClick={handleSend}>Send</button>

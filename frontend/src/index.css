@@ -151,3 +151,43 @@ textarea {
     gap: 0.5rem;
     padding: 0.5rem 0;
 }
+
+.day-separator {
+    text-align: center;
+    color: #888;
+    font-size: 0.85rem;
+    margin: 1rem 0;
+    position: relative;
+}
+
+.day-separator::before,
+.day-separator::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 35%;
+    height: 1px;
+    background: #333;
+}
+
+.day-separator::before { left: 0; }
+.day-separator::after { right: 0; }
+
+.message-time {
+    font-size: 0.75rem;
+    color: #888;
+    margin-left: 0.5rem;
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #0f3460;
+}
+
+.chat-header h2 {
+    margin: 0;
+    font-size: 1rem;
+}

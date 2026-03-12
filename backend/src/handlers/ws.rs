@@ -10,6 +10,14 @@ pub struct WsQuery {
     token: String,
 }
 
+#[derive(serde::Deserialize)]
+struct IncomingMessage {
+    #[serde(rename = "type")]
+    msg_type: String,
+    content: Option<String>,
+    message_id: Option<i64>,
+}
+
 pub fn validate_token(token: &str) -> Result<Option<Claims>, APIError> {
     let secret = std::env::var("JWT_SECRET").map_err(|_| APIError::InternalServerError)?;
     Ok(decode::<Claims>(
@@ -76,12 +84,27 @@ async fn publish_message(
         .await
         .map_err(|_| APIError::InternalServerError)?;
 
-    let msg: String = serde_json::json!({
+    let result = sqlx::query!(
+        "INSERT INTO messages(room_id, user_id, content) VALUES(?, ?, ?)",
+        room_id,
+        user_id,
+        message,
+    )
+        .execute(pool)
+        .await
+        .map_err(|_| APIError::InternalServerError)?;
+
+    let message_id = result.last_insert_id();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    let msg = serde_json::json!({
+        "id": message_id,
         "username": user.username,
         "user_id": user_id,
         "content": message,
         "room_id": room_id,
         "deleted": 0,
+        "created_at": now,
     }).to_string();
 
     redis::cmd("PUBLISH")
@@ -100,6 +123,51 @@ async fn publish_message(
     .execute(pool)
     .await
     .map_err(|_| APIError::InternalServerError)?;
+
+    Ok(())
+}
+
+async fn publish_delete(
+    pool: &MySqlPool,
+    redis_conn: &mut MultiplexedConnection,
+    message_id: i64,
+    room_id: i32,
+    user_id: i32,
+) -> Result<(), APIError> {
+    // Verify ownership
+    let msg = sqlx::query!(
+        "SELECT user_id FROM messages WHERE id = ?",
+        message_id,
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| APIError::InternalServerError)?
+    .ok_or(APIError::NotFound)?;
+
+    if msg.user_id != user_id {
+        return Err(APIError::Unauthorized);
+    }
+
+    sqlx::query!(
+        "UPDATE messages SET deleted = 1 WHERE id = ?",
+        message_id,
+    )
+    .execute(pool)
+    .await
+    .map_err(|_| APIError::InternalServerError)?;
+
+    let notification = serde_json::json!({
+        "type": "delete",
+        "message_id": message_id,
+        "room_id": room_id,
+    }).to_string();
+
+    redis::cmd("PUBLISH")
+        .arg(format!("room:{}", room_id))
+        .arg(notification)
+        .query_async::<_, ()>(redis_conn)
+        .await
+        .map_err(|_| APIError::InternalServerError)?;
 
     Ok(())
 }
@@ -124,8 +192,27 @@ async fn handle_socket(
     loop {
         tokio::select! {
             Some(Ok(Message::Text(message))) = receiver.next() => {
-                if publish_message(&state.pool, &mut redis_conn, message, room_id, id).await.is_err() {
-                    break;
+                let incoming: IncomingMessage = match serde_json::from_str(&message) {
+                    Ok(m) => m,
+                    Err(_) => break,
+                };
+
+                match incoming.msg_type.as_str() {
+                    "message" => {
+                        if let Some(content) = incoming.content {
+                            if publish_message(&state.pool, &mut redis_conn, content, room_id, id).await.is_err() {
+                                break;
+                            }
+                        }
+                    },
+                    "delete" => {
+                        if let Some(message_id) = incoming.message_id {
+                            if publish_delete(&state.pool, &mut redis_conn, message_id, room_id, id).await.is_err() {
+                                break;
+                            }
+                        }
+                    },
+                    _ => {}
                 }
             },
 
